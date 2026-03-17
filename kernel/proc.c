@@ -5,7 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
-
+#include "procinfo.h"
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
@@ -691,4 +691,38 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+
+// Hàm này đi tìm tiến trình có pid tương ứng và chép dữ liệu ra địa chỉ info_addr của user
+int getprocinfo(int pid, uint64 info_addr) {
+  struct proc *p;
+  struct proc *my_p = myproc(); // Tiến trình đang gọi syscall
+  struct procinfo tmp;          // Cái hộp tạm thời nằm trong Kernel
+
+  // Duyệt qua toàn bộ mảng tiến trình
+  for(p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock); // Khóa lại để đọc cho an toàn
+
+    // Nếu tìm thấy tiến trình có pid khớp và nó đang được sử dụng
+    if(p->pid == pid && p->state != UNUSED) {
+      // 1. Chép dữ liệu vào hộp tạm 'tmp'
+      tmp.pid = p->pid;
+      tmp.state = p->state;
+      tmp.sz = p->sz;
+      // Tránh lỗi nếu tiến trình không có cha (ví dụ init)
+      tmp.ppid = p->parent ? p->parent->pid : 0;
+      safestrcpy(tmp.name, p->name, sizeof(tmp.name));
+      
+      release(&p->lock); // Đọc xong thì mở khóa
+
+      // 2. Chép cái hộp tạm 'tmp' từ Kernel ra không gian User (info_addr)
+      if(copyout(my_p->pagetable, info_addr, (char *)&tmp, sizeof(tmp)) < 0) {
+        return -1; // Lỗi copy
+      }
+      return 0; // Thành công
+    }
+    release(&p->lock);
+  }
+  return -1; // Không tìm thấy pid nào khớp
 }

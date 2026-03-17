@@ -120,3 +120,21 @@ sys_trace(void)
   
   return 0; // Trả về 0 báo hiệu thành công
 }
+
+uint64
+sys_procinfo(void)
+{
+  int pid;
+  uint64 info_addr; // Địa chỉ của con trỏ struct procinfo mà user truyền vào
+
+  // Lấy 2 tham số user truyền vào
+  argint(0, &pid);
+  argaddr(1, &info_addr);
+  
+  // Kiểm tra nếu con trỏ bị NULL
+  if (info_addr == 0)
+    return -1;
+
+  // Gọi hàm helper
+  return getprocinfo(pid, info_addr);
+}
