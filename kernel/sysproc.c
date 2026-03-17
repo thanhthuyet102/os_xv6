@@ -107,3 +107,16 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_trace(void)
+{
+  int mask;
+  
+  argint(0, &mask);
+  
+  // myproc() trả về con trỏ struct proc của tiến trình đang chạy
+  myproc()->trace_mask = mask;
+  
+  return 0; // Trả về 0 báo hiệu thành công
+}
