@@ -488,9 +488,35 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
 
 
 #ifdef LAB_PGTBL
+// Hàm đệ quy phụ trợ
+void _vmprint(pagetable_t pagetable, int level) {
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    
+    if(pte & PTE_V){ // Nếu entry này hợp lệ (bit V = 1)
+      
+      // In thụt lề: mỗi level tương ứng với một chuỗi " .."
+      for(int j = 0; j < level; j++){
+        printf(" ..");
+      }
+      
+      // Lấy địa chỉ vật lý từ PTE
+      uint64 pa = PTE2PA(pte);
+      printf("%d: pte %p pa %p\n", i, (void*)pte, (void*)pa);
+      
+      // Kiểm tra xem có phải là Leaf page không.
+      // Nếu KHÔNG có bit R, W, X nào được bật -> Nó là con trỏ đến page table tầng dưới
+      if((pte & (PTE_R | PTE_W | PTE_X)) == 0){
+        _vmprint((pagetable_t)pa, level + 1); // Đệ quy xuống tầng tiếp theo
+      }
+    }
+  }
+}
+
 void
 vmprint(pagetable_t pagetable) {
-  // your code here
+  printf("page table %p\n", pagetable);
+  _vmprint(pagetable, 1); // Tầng đầu tiên truyền vào level = 1
 }
 #endif
 
