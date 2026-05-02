@@ -138,7 +138,7 @@ found:
     release(&p->lock);
     return 0;
   }
-  // Khởi tạo giá trị PID vào trang này
+  // Khởi tạo giá trị PID vào trang 
   p->usyscall->pid = p->pid;
 
   // An empty user page table.
